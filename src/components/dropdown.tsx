@@ -40,7 +40,7 @@ export default function Dropdown({ children, title }: DropdownProps) {
         aria-expanded={dropdownOpen}
         onClick={handleClick}
       >
-        <span className="sr-only">Show submenu for "{title}"</span>
+        <span className="sr-only">Show submenu for &quot;{title}&quot;</span>
         <svg
           className="fill-gray-500"
           xmlns="http://www.w3.org/2000/svg"
