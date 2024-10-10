@@ -18,6 +18,7 @@ export default function DemoPage() {
   const [endUnixTs, setEndUnixTs] = useState(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [ibToken, setIbToken] = useState("SOL");
+  const [isMinting, setIsMinting] = useState(false);
 
   const wallet = useWallet();
   const connection = createConnection();
@@ -121,6 +122,65 @@ export default function DemoPage() {
     }
   };
 
+  // Add this new function inside the component
+  const handleMintTestTokens = async () => {
+    if (!wallet.connected || !wallet.publicKey) {
+      toast.error("Wallet not connected");
+      return;
+    }
+
+    setIsMinting(true);
+
+    try {
+      const response = await fetch("/api/faucet", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customer: wallet.publicKey.toString(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to mint test tokens");
+      }
+
+      const data = await response.json();
+
+      // Deserialize and send the transaction
+      const deserializedTx = VersionedTransaction.deserialize(
+        Buffer.from(data.transaction, "base64")
+      );
+
+      const signedTransaction = await wallet.sendTransaction(
+        deserializedTx,
+        connection
+      );
+
+      const { lastValidBlockHeight, lastBlockhash } = await connection
+        .getLatestBlockhash()
+        .then((res) => ({
+          lastValidBlockHeight: res.lastValidBlockHeight,
+          lastBlockhash: res.blockhash,
+        }));
+
+      const strategy: TransactionConfirmationStrategy = {
+        signature: signedTransaction,
+        lastValidBlockHeight,
+        blockhash: lastBlockhash,
+      };
+      await connection.confirmTransaction(strategy, "processed");
+
+      toast.success("Test tokens minted successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.error(`Failed to mint test tokens: ${err}`);
+    } finally {
+      setIsMinting(false);
+    }
+  };
+
   return (
     <div className="min-h-[calc(100vh-15.5rem)]">
       <div className="absolute inset-0 flex flex-col items-center justify-center p-6 z-0 mb-36">
@@ -128,6 +188,13 @@ export default function DemoPage() {
           <h1 className="text-2xl font-semibold text-center">
             Demo Purchase Page
           </h1>
+          <button
+            onClick={handleMintTestTokens}
+            disabled={isMinting || !wallet.publicKey}
+            className="w-full mt-4 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
+          >
+            {isMinting ? "Minting..." : "Mint Test Tokens"}
+          </button>
           <div>
             <label className="block text-sm font-medium text-gray-200">
               Select Token

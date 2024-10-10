@@ -21,12 +21,12 @@ import {
 
 const markets = {
   SOL: {
-    marketId: "EvhH5tnknbgikGsqRMLMCXNPEnsKs8P3mWxpt65eG6fK",
-    mint: "9g3Zn7Qkwx4duF4L9tVQjXB1MnoMpnyrHRgY11da7ETB",
+    marketId: "A4foZXPmLcocrBftcLVZFcTbsderoQrSv9a6g3MwQSev",
+    mint: "22E2oN64PYazaKdK54WH1urjGJSTcznwRQqvPcpkiJUL",
     decimals: 9,
   },
   USDC: {
-    marketId: "EvhH5tnknbgikGsqRMLMCXNPEnsKs8P3mWxpt65eG6fK",
+    marketId: "A4foZXPmLcocrBftcLVZFcTbsderoQrSv9a6g3MwQSev",
     mint: "fAM1Fwf2ZutMTPRvXYnJLpWkb3FRoP7uQWyNCX2Uvfk",
     decimals: 6,
   },
@@ -34,17 +34,17 @@ const markets = {
 
 /**
  * @swagger
- * /api/pay/{ibToken}:
+ * /api/pay/{baseToken}:
  *   get:
- *     summary: Calculate required IB amount
- *     description: Calculates the required IB amount for a given payment amount and returns the lock amount.
+ *     summary: Calculate required Yield Bearing Token (YBT) amount
+ *     description: Calculates the required YBT amount for a given payment amount and returns the lock amount.
  *     parameters:
  *       - in: path
- *         name: ibToken
+ *         name: baseToken
  *         required: true
  *         schema:
  *           type: string
- *         description: The IB token symbol (e.g., SOL, USDC).
+ *         description: The base token symbol (e.g., SOL, USDC).
  *       - in: query
  *         name: amount
  *         required: true
@@ -53,7 +53,7 @@ const markets = {
  *         description: The amount to be paid.
  *     responses:
  *       200:
- *         description: Successfully calculated required IB amount.
+ *         description: Successfully calculated required YBT amount.
  *         content:
  *           application/json:
  *             schema:
@@ -64,7 +64,7 @@ const markets = {
  *                   description: The end Unix timestamp.
  *                 lockAmount:
  *                   type: number
- *                   description: The required IB amount to lock.
+ *                   description: The required YBT amount to lock.
  *       400:
  *         description: Invalid input parameters.
  *       500:
@@ -72,7 +72,7 @@ const markets = {
  */
 export async function GET(
   req: Request,
-  { params }: { params: { ibToken: string } }
+  { params }: { params: { baseToken: string } }
 ) {
   try {
     const { searchParams } = new URL(req.url);
@@ -84,11 +84,11 @@ export async function GET(
     }
 
     // check ibToken exists in market object
-    if (!(params.ibToken in markets)) {
+    if (!(params.baseToken in markets)) {
       return NextResponse.json({ error: "Invalid ibToken" }, { status: 400 });
     }
 
-    const market = markets[params.ibToken as keyof typeof markets].marketId;
+    const market = markets[params.baseToken as keyof typeof markets].marketId;
     const smc = new SplitClient(
       createConnection(),
       smIdl as any,
@@ -105,7 +105,7 @@ export async function GET(
 
     const amountNumber =
       Number(amount) *
-      10 ** markets[params.ibToken as keyof typeof markets].decimals;
+      10 ** markets[params.baseToken as keyof typeof markets].decimals;
 
     // Use the new function to calculate requiredIbAmount
     const { requiredIbAmount, inIbMerchant, inIbAmm } =
@@ -115,7 +115,7 @@ export async function GET(
         endUnixTS,
         basePerIbCurr,
         ammAcc.nPt.toNumber(),
-        ammAcc.nAsset.toNumber(),
+        ammAcc.nIb.toNumber(),
         new BN(ammAcc.scalarRootNano.toString()),
         ammAcc.lastImpliedRateNano.toNumber()
       );
@@ -124,7 +124,7 @@ export async function GET(
       endUnixTS: endUnixTS,
       lockAmount:
         requiredIbAmount /
-        10 ** markets[params.ibToken as keyof typeof markets].decimals,
+        10 ** markets[params.baseToken as keyof typeof markets].decimals,
     };
 
     return NextResponse.json(response);
@@ -139,17 +139,17 @@ export async function GET(
 
 /**
  * @swagger
- * /api/pay/{ibToken}:
+ * /api/pay/{baseToken}:
  *   post:
  *     summary: Process payment transaction
  *     description: Processes a payment transaction between a customer and a merchant.
  *     parameters:
  *       - in: path
- *         name: ibToken
+ *         name: baseToken
  *         required: true
  *         schema:
  *           type: string
- *         description: The IB token symbol (e.g., SOL, USDC).
+ *         description: The base token symbol (e.g., SOL, USDC).
  *       - in: query
  *         name: amount
  *         required: true
@@ -190,7 +190,7 @@ export async function GET(
  */
 export async function POST(
   req: Request,
-  { params }: { params: { ibToken: string } }
+  { params }: { params: { baseToken: string } }
 ) {
   try {
     const { searchParams } = new URL(req.url);
@@ -203,7 +203,7 @@ export async function POST(
     }
 
     // check ibToken exists in market object
-    if (!(params.ibToken in markets)) {
+    if (!(params.baseToken in markets)) {
       return NextResponse.json({ error: "Invalid ibToken" }, { status: 400 });
     }
 
@@ -226,7 +226,7 @@ export async function POST(
       );
     }
 
-    const market = markets[params.ibToken as keyof typeof markets].marketId;
+    const market = markets[params.baseToken as keyof typeof markets].marketId;
     const smc = new SplitClient(
       createConnection(),
       smIdl as any,
@@ -243,7 +243,7 @@ export async function POST(
 
     const amountNumber =
       Number(amount) *
-      10 ** markets[params.ibToken as keyof typeof markets].decimals;
+      10 ** markets[params.baseToken as keyof typeof markets].decimals;
 
     const ixs = [];
 
@@ -255,7 +255,7 @@ export async function POST(
         endUnixTS,
         basePerIbCurr,
         ammAcc.nPt.toNumber(),
-        ammAcc.nAsset.toNumber(),
+        ammAcc.nIb.toNumber(),
         new BN(ammAcc.scalarRootNano.toString()),
         ammAcc.lastImpliedRateNano.toNumber()
       );
@@ -270,7 +270,7 @@ export async function POST(
         market: new PublicKey(market),
         tokenYtMint: new PublicKey(ytMint),
         tokenIbMint: new PublicKey(
-          markets[params.ibToken as keyof typeof markets].mint
+          markets[params.baseToken as keyof typeof markets].mint
         ),
         tokenIbProgram: TOKEN_2022_PROGRAM_ID,
       }
@@ -285,7 +285,7 @@ export async function POST(
         market: new PublicKey(market),
         ytMint: new PublicKey(ytMint),
         tokenIbMint: new PublicKey(
-          markets[params.ibToken as keyof typeof markets].mint
+          markets[params.baseToken as keyof typeof markets].mint
         ),
         tokenIbProgram: TOKEN_2022_PROGRAM_ID,
       }
@@ -294,14 +294,14 @@ export async function POST(
     ixs.push(...swapYtIxs);
 
     const customerIbAta = getAssociatedTokenAddressSync(
-      new PublicKey(markets[params.ibToken as keyof typeof markets].mint),
+      new PublicKey(markets[params.baseToken as keyof typeof markets].mint),
       new PublicKey(customer),
       false,
       TOKEN_2022_PROGRAM_ID
     );
 
     const merchantIbAta = getAssociatedTokenAddressSync(
-      new PublicKey(markets[params.ibToken as keyof typeof markets].mint),
+      new PublicKey(markets[params.baseToken as keyof typeof markets].mint),
       new PublicKey(merchant),
       false,
       TOKEN_2022_PROGRAM_ID
@@ -312,7 +312,7 @@ export async function POST(
         new PublicKey(customer),
         merchantIbAta,
         new PublicKey(merchant),
-        new PublicKey(markets[params.ibToken as keyof typeof markets].mint),
+        new PublicKey(markets[params.baseToken as keyof typeof markets].mint),
         TOKEN_2022_PROGRAM_ID
       )
     );
@@ -320,11 +320,11 @@ export async function POST(
     // transfer amount ibToken from customer to merchant
     const transferIbIxs = createTransferCheckedInstruction(
       customerIbAta,
-      new PublicKey(markets[params.ibToken as keyof typeof markets].mint),
+      new PublicKey(markets[params.baseToken as keyof typeof markets].mint),
       merchantIbAta,
       new PublicKey(customer),
       Math.floor(amountNumber / basePerIbCurr),
-      markets[params.ibToken as keyof typeof markets].decimals,
+      markets[params.baseToken as keyof typeof markets].decimals,
       [],
       TOKEN_2022_PROGRAM_ID
     );

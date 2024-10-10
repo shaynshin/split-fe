@@ -23,7 +23,7 @@ import {
 } from "@solana/web3.js";
 import {
   calculateAmountIbToPt,
-  calculateAmountPtToIb,
+  calculateAmountIb,
   getBasePerIbCurr,
 } from "@/lib/Calculation";
 import * as smIdl from "@/client/idl/split_program.json";
@@ -63,13 +63,12 @@ interface AmmAccount {
 
 // Market Data
 const market = {
-  EvhH5tnknbgikGsqRMLMCXNPEnsKs8P3mWxpt65eG6fK: {
+  A4foZXPmLcocrBftcLVZFcTbsderoQrSv9a6g3MwQSev: {
     name: "JitoSOL",
     fullName: "Jito Staked SOL",
     decimals: 9,
     icon: "https://storage.googleapis.com/token-metadata/JitoSOL-256.png",
-    mint: "9g3Zn7Qkwx4duF4L9tVQjXB1MnoMpnyrHRgY11da7ETB",
-    amm: "8EkrjaAsV3j1AMG377U2prFKoMpaCT4LYb91HXW7ZicN",
+    mint: "22E2oN64PYazaKdK54WH1urjGJSTcznwRQqvPcpkiJUL",
   },
   "8E8g93aDN1qD1XB4HoLQnJQAGmr45pnHrTUVkDG2aiRM": {
     name: "CRT",
@@ -77,7 +76,6 @@ const market = {
     decimals: 9,
     icon: "https://shdw-drive.genesysgo.net/7G7ayDnjFoLcEUVkxQ2Jd4qquAHp5LiSBii7t81Y2E23/carrot.png",
     mint: "fAM1Fwf2ZutMTPRvXYnJLpWkb3FRoP7uQWyNCX2Uvfk",
-    amm: "99jZTemhuEczbWXsqzsBKDEPcAuhjCoXtxgG2hH5CJk",
   },
 };
 // React Component
@@ -247,7 +245,7 @@ export default function MarketClientPage({
                 currentTime,
                 new BN(marketAcc.endUnixTs, 16).toNumber(),
                 new BN(ammAcc.nPt, 16).toNumber(),
-                new BN(ammAcc.nAsset, 16).toNumber(),
+                new BN(ammAcc.nIb, 16).toNumber(),
                 new BN(ammAcc.scalarRootNano, 16),
                 new BN(ammAcc.lastImpliedRateNano, 16).toNumber(),
                 inputAmountInBaseUnits
@@ -256,14 +254,15 @@ export default function MarketClientPage({
           } else {
             // Swap from PT to IB
             output =
-              calculateAmountPtToIb(
+              calculateAmountIb(
                 currentTime,
                 new BN(marketAcc.endUnixTs, 16).toNumber(),
                 new BN(ammAcc.nPt, 16).toNumber(),
-                new BN(ammAcc.nAsset, 16).toNumber(),
+                new BN(ammAcc.nIb, 16).toNumber(),
                 new BN(ammAcc.scalarRootNano, 16),
                 new BN(ammAcc.lastImpliedRateNano, 16).toNumber(),
-                inputAmountInBaseUnits
+                inputAmountInBaseUnits,
+                true
               ) /
               10 ** decimals;
           }

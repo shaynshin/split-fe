@@ -91,17 +91,21 @@ function exchangeRateNano(
   return exchangeRateNano;
 }
 
-export const calculateAmountPtToIb = (
+export const calculateAmountIb = (
   currentUnixTs: number,
   endUnixTs: number,
   nPtPre: number,
-  nAssetPre: number,
+  nIbPre: number,
   scalarRootNanoPre: BN,
   lastImpliedRateNanoPre: number,
-  dPt: number
+  dPt: number,
+  isPtIn: boolean
 ) => {
-  const nPtPost = nPtPre + dPt;
-  const nAssetPost = nAssetPre - dPt;
+  const nAssetPre = nIbPre * getBasePerIbCurr(currentUnixTs, endUnixTs);
+
+  const [nPtPost, nAssetPost] = isPtIn
+    ? [nPtPre + dPt, nAssetPre - dPt]
+    : [nPtPre - dPt, nAssetPre + dPt];
 
   const rateAnchorNano = updateRateAnchor(
     nPtPre,
@@ -129,13 +133,30 @@ export const calculateAmountIbToPt = (
   currentUnixTs: number,
   endUnixTs: number,
   nPtPre: number,
-  nAssetPre: number,
+  nIbPre: number,
   scalarRootNanoPre: BN,
   lastImpliedRateNanoPre: number,
   dIb: number
 ) => {
+  const nAssetPre = nIbPre * getBasePerIbCurr(currentUnixTs, endUnixTs);
+
+  const rateAnchorNano = updateRateAnchor(
+    nPtPre,
+    nAssetPre,
+    scalarRootNanoPre,
+    lastImpliedRateNanoPre,
+    endUnixTs,
+    currentUnixTs
+  );
+
+  const rateScalar = rateScalarNano(
+    scalarRootNanoPre,
+    endUnixTs,
+    currentUnixTs
+  );
+
   let lower = 0;
-  let upper = nAssetPre; // Cannot trade more PT than available assets
+  let upper = nPtPre; // Cannot trade more PT than available assets
 
   const tolerance = 1; // Adjust for desired precision
   const maxIterations = 100;
@@ -146,8 +167,8 @@ export const calculateAmountIbToPt = (
   while (iteration < maxIterations) {
     dPt = Math.floor((lower + upper) / 2);
 
-    const nPtPost = nPtPre + dPt;
-    const nAssetPost = nAssetPre - dPt;
+    const nPtPost = nPtPre - dPt;
+    const nAssetPost = nAssetPre + dPt;
 
     if (nAssetPost < 0) {
       upper = dPt - 1;
@@ -155,22 +176,7 @@ export const calculateAmountIbToPt = (
       continue;
     }
 
-    const rateAnchorNano = updateRateAnchor(
-      nPtPre,
-      nAssetPre,
-      scalarRootNanoPre,
-      lastImpliedRateNanoPre,
-      endUnixTs,
-      currentUnixTs
-    );
-
     const pTrade = proportionNano(nPtPost, nAssetPost);
-
-    const rateScalar = rateScalarNano(
-      scalarRootNanoPre,
-      endUnixTs,
-      currentUnixTs
-    );
 
     const exchangeRate = exchangeRateNano(pTrade, rateScalar, rateAnchorNano);
 
@@ -209,7 +215,7 @@ export const calculateRequiredIbAmount = (
   endUnixTS: number,
   basePerIbCurr: number,
   nPt: number,
-  nAsset: number,
+  nIb: number,
   scalarRootNano: BN,
   lastImpliedRateNano: number
 ) => {
@@ -224,14 +230,15 @@ export const calculateRequiredIbAmount = (
   while (iteration < maxIterations) {
     requiredIbAmount = (lower + upper) / 2;
     const PtYtAmount = basePerIbCurr * requiredIbAmount;
-    inIbAmm = calculateAmountPtToIb(
+    inIbAmm = calculateAmountIb(
       currentUnixTS,
       endUnixTS,
       nPt,
-      nAsset,
+      nIb,
       scalarRootNano,
       lastImpliedRateNano,
-      PtYtAmount
+      PtYtAmount,
+      false
     );
     const f = requiredIbAmount - inIbAmm - amountNumber;
 
