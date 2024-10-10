@@ -309,7 +309,7 @@ export default function MarketClientPage({
         const nPt = new BN(ammAcc.nPt, 16).toNumber();
         const nIb = new BN(ammAcc.nIb, 16).toNumber();
         const lpSupply = new BN(ammAcc.lpSupply, 16).toNumber();
-        
+
         const ratio = +inputAmount2 / nIb;
         setInputAmount((ratio * nPt).toString());
         setOutputAmount((ratio * lpSupply).toString());
@@ -504,29 +504,22 @@ export default function MarketClientPage({
             {["PT", "YT", "LP"].map((mode) => (
               <button
                 key={mode}
-                className={`font-bold py-2 px-4 rounded-lg focus:outline-none ${
-                  selectedMode === mode
-                    ? `bg-${
-                        mode === "PT"
-                          ? "blue"
-                          : mode === "YT"
-                          ? "cyan"
-                          : "indigo"
-                      }-500 text-white`
-                    : `bg-${
-                        mode === "PT"
-                          ? "blue"
-                          : mode === "YT"
-                          ? "cyan"
-                          : "indigo"
-                      }-500/30 text-${
-                        mode === "PT"
-                          ? "blue"
-                          : mode === "YT"
-                          ? "cyan"
-                          : "indigo"
-                      }-500`
-                }`}
+                className={`
+                  font-bold py-2 px-4 rounded-lg focus:outline-none
+                  ${
+                    selectedMode === mode
+                      ? mode === "PT"
+                        ? "bg-blue-500 text-white"
+                        : mode === "YT"
+                        ? "bg-cyan-500 text-white"
+                        : "bg-indigo-500 text-white"
+                      : mode === "PT"
+                      ? "bg-blue-500/30 text-blue-500"
+                      : mode === "YT"
+                      ? "bg-cyan-500/30 text-cyan-500"
+                      : "bg-indigo-500/30 text-indigo-500"
+                  }
+                `}
                 onClick={() => setSelectedMode(mode as "PT" | "YT" | "LP")}
               >
                 {mode}
