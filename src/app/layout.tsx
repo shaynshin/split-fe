@@ -76,22 +76,7 @@ export default function RootLayout({
       >
         <WalletWrapper>
           <div className="flex min-h-screen flex-col overflow-hidden supports-[overflow:clip]:overflow-clip">
-            <Header />
-            <PageIllustration />
             {children}
-            <Footer />
-            <ToastContainer
-              position="top-right"
-              autoClose={5000}
-              hideProgressBar={false}
-              closeOnClick={false}
-              rtl={false}
-              pauseOnFocusLoss
-              draggable={false}
-              pauseOnHover={false}
-              theme="dark"
-              transition={Slide}
-            />
           </div>
         </WalletWrapper>
       </body>

@@ -1,11 +1,9 @@
-import Hero from "@/components/hero-home";
-import MarketsTable from "@/components/market-table";
+import Sunset from "@/components/sunset";
 
 export default function Home() {
   return (
-    <div className="min-h-[calc(100vh-15.5rem)]">
-      <Hero />
-      <MarketsTable />
+    <div className="min-h-screen flex items-center justify-center">
+      <Sunset />
     </div>
   );
 }
